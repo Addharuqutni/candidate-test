@@ -1,0 +1,128 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Requests\StoreLayupRequest;
+use App\Http\Requests\UpdateLayupRequest;
+use App\Models\Layup;
+use App\Models\Supplier;
+use App\Repositories\Contracts\LayupRepositoryInterface;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\View\View;
+
+class LayupController extends Controller
+{
+    public function __construct(private readonly LayupRepositoryInterface $layupRepository)
+    {
+    }
+
+    public function index(Supplier $supplier): View
+    {
+        return view('layups.index', [
+            'supplier' => $supplier,
+            'layups' => $this->layupRepository->getBySupplier($supplier),
+        ]);
+    }
+
+    public function create(Supplier $supplier): View
+    {
+        return view('layups.create', compact('supplier'));
+    }
+
+    public function store(StoreLayupRequest $request, Supplier $supplier): RedirectResponse
+    {
+        $layup = $this->layupRepository->createForSupplier($supplier, $request->validated());
+
+        return redirect()
+            ->route('suppliers.layups.show', [$supplier, $layup])
+            ->with('status', 'Layup created successfully.');
+    }
+
+    public function show(Supplier $supplier, Layup $layup): View
+    {
+        $layup = $this->layupRepository->findForSupplierOrFail($supplier, $layup->id);
+
+        return view('layups.show', compact('supplier', 'layup'));
+    }
+
+    public function edit(Supplier $supplier, Layup $layup): View
+    {
+        return view('layups.edit', compact('supplier', 'layup'));
+    }
+
+    public function update(UpdateLayupRequest $request, Supplier $supplier, Layup $layup): RedirectResponse
+    {
+        $this->layupRepository->update($layup, $request->validated());
+
+        return redirect()
+            ->route('suppliers.layups.show', [$supplier, $layup])
+            ->with('status', 'Layup updated successfully.');
+    }
+
+    public function destroy(Supplier $supplier, Layup $layup): RedirectResponse
+    {
+        $this->layupRepository->delete($layup);
+
+        return redirect()
+            ->route('suppliers.layups.index', $supplier)
+            ->with('status', 'Layup deleted successfully.');
+    }
+
+    public function duplicate(Supplier $supplier, Layup $layup): RedirectResponse
+    {
+        $baseName = $layup->name.' (Copy)';
+        $candidateName = $baseName;
+        $counter = 2;
+
+        while ($this->layupRepository->findByNameInSupplier($supplier, $candidateName) !== null) {
+            $candidateName = $baseName.' '.$counter;
+            $counter++;
+        }
+
+        $duplicatedLayup = $this->layupRepository->createForSupplier($supplier, [
+            'name' => $candidateName,
+            'description' => $layup->description,
+        ]);
+
+        foreach ($layup->layers()->orderBy('layer_order')->get() as $layer) {
+            $duplicatedLayup->layers()->create([
+                'layer_order' => $layer->layer_order,
+                'thickness' => $layer->thickness,
+                'width' => $layer->width,
+                'angle' => $layer->angle,
+            ]);
+        }
+
+        return redirect()
+            ->route('suppliers.layups.show', [$supplier, $duplicatedLayup])
+            ->with('status', 'Layup duplicated successfully.');
+    }
+
+    public function catalog(Request $request): View
+    {
+        $search = trim((string) $request->query('q', ''));
+
+        $layups = Layup::query()
+            ->with('supplier:id,name')
+            ->withCount('layers')
+            ->when($search !== '', function ($query) use ($search): void {
+                $query->where(function ($subQuery) use ($search): void {
+                    $subQuery
+                        ->where('name', 'like', '%'.$search.'%')
+                        ->orWhere('description', 'like', '%'.$search.'%')
+                        ->orWhereHas('supplier', function ($supplierQuery) use ($search): void {
+                            $supplierQuery->where('name', 'like', '%'.$search.'%');
+                        });
+                });
+            })
+            ->latest()
+            ->paginate(12)
+            ->withQueryString();
+
+        return view('layups.catalog', [
+            'layups' => $layups,
+            'search' => $search,
+        ]);
+    }
+}
