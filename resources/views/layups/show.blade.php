@@ -10,6 +10,7 @@
             @endif
 
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+                <a href="{{ route('suppliers.layups.index', $supplier) }}" class="btn-secondary">Back</a>
                 <form method="POST" action="{{ route('suppliers.layups.duplicate', [$supplier, $layup]) }}">
                     @csrf
                     <button type="submit" class="btn-secondary">Duplicate</button>

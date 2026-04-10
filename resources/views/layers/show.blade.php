@@ -12,7 +12,9 @@
                 <div class="status-success">{{ session('status') }}</div>
             @endif
             <div class="app-card">
-                <div class="mb-4"><a class="app-link" href="{{ route('suppliers.layups.show', [$supplier, $layup]) }}">Back to Layup</a></div>
+                <div class="mb-4 flex justify-end">
+                    <a href="{{ route('suppliers.layups.show', [$supplier, $layup]) }}" class="btn-secondary">Back</a>
+                </div>
                 <p><span class="font-medium">Layer Order:</span> {{ $layer->layer_order }}</p>
                 <p><span class="font-medium">Thickness:</span> {{ $layer->thickness }}</p>
                 <p><span class="font-medium">Width:</span> {{ $layer->width }}</p>

@@ -28,6 +28,7 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
+                        <a href="{{ route('suppliers.index') }}" class="btn-secondary">Back</a>
                         <a href="{{ route('suppliers.edit', $supplier) }}" class="btn-secondary">Edit Supplier</a>
                     </div>
                 </div>

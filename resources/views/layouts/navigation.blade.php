@@ -11,7 +11,6 @@
                         </span>
                         <span class="leading-tight">
                             <span class="text-main block text-base font-semibold">CLT Manager</span>
-                            <span class="text-muted block text-xs">Engineering Admin</span>
                         </span>
                     </a>
                 </div>
@@ -49,7 +48,6 @@
                             </span>
                             <div class="text-left leading-tight">
                                 <span class="block text-sm">{{ Auth::user()->name }}</span>
-                                <span class="user-meta-role block text-[11px]">Engineering Lead</span>
                             </div>
 
                             <div class="ms-1">

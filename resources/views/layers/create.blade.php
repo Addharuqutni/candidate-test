@@ -1,8 +1,11 @@
 <x-app-layout>
     <x-slot name="header">
-        <div>
-            <h2 class="page-title">Create Layer</h2>
-            <p class="page-subtitle mt-1">Layup: {{ $layup->name }}</p>
+        <div class="flex items-end justify-between gap-3">
+            <div>
+                <h2 class="page-title">Create Layer</h2>
+                <p class="page-subtitle mt-1">Layup: {{ $layup->name }}</p>
+            </div>
+            <a href="{{ route('suppliers.layups.show', [$supplier, $layup]) }}" class="btn-secondary">Back</a>
         </div>
     </x-slot>
 

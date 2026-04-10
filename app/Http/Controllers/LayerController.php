@@ -20,6 +20,8 @@ class LayerController extends Controller
 
     public function index(Supplier $supplier, Layup $layup): View
     {
+        $this->authorize('viewAny', Layer::class);
+
         return view('layers.index', [
             'supplier' => $supplier,
             'layup' => $layup,
@@ -29,11 +31,15 @@ class LayerController extends Controller
 
     public function create(Supplier $supplier, Layup $layup): View
     {
+        $this->authorize('create', Layer::class);
+
         return view('layers.create', compact('supplier', 'layup'));
     }
 
     public function store(StoreLayerRequest $request, Supplier $supplier, Layup $layup): RedirectResponse
     {
+        $this->authorize('create', Layer::class);
+
         $layer = $this->layerRepository->createForLayup($layup, $request->validated());
 
         return redirect()
@@ -43,6 +49,8 @@ class LayerController extends Controller
 
     public function show(Supplier $supplier, Layup $layup, Layer $layer): View
     {
+        $this->authorize('view', $layer);
+
         $layer = $this->layerRepository->findForLayupOrFail($layup, $layer->id);
 
         return view('layers.show', compact('supplier', 'layup', 'layer'));
@@ -50,11 +58,15 @@ class LayerController extends Controller
 
     public function edit(Supplier $supplier, Layup $layup, Layer $layer): View
     {
+        $this->authorize('update', $layer);
+
         return view('layers.edit', compact('supplier', 'layup', 'layer'));
     }
 
     public function update(UpdateLayerRequest $request, Supplier $supplier, Layup $layup, Layer $layer): RedirectResponse
     {
+        $this->authorize('update', $layer);
+
         $this->layerRepository->update($layer, $request->validated());
 
         return redirect()
@@ -64,6 +76,8 @@ class LayerController extends Controller
 
     public function destroy(Supplier $supplier, Layup $layup, Layer $layer): RedirectResponse
     {
+        $this->authorize('delete', $layer);
+
         $this->layerRepository->delete($layer);
 
         return redirect()
@@ -73,6 +87,8 @@ class LayerController extends Controller
 
     public function catalog(Request $request): View
     {
+        $this->authorize('viewAny', Layer::class);
+
         $search = trim((string) $request->query('q', ''));
 
         $layers = Layer::query()

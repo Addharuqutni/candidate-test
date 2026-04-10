@@ -1,8 +1,11 @@
 <x-app-layout>
     <x-slot name="header">
-        <div>
-            <h2 class="page-title">Create Supplier</h2>
-            <p class="page-subtitle mt-1">Add a new supplier as the root entity for layups and layers.</p>
+        <div class="flex items-end justify-between gap-3">
+            <div>
+                <h2 class="page-title">Create Supplier</h2>
+                <p class="page-subtitle mt-1">Add a new supplier as the root entity for layups and layers.</p>
+            </div>
+            <a href="{{ route('suppliers.index') }}" class="btn-secondary">Back</a>
         </div>
     </x-slot>
 

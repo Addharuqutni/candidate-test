@@ -18,6 +18,8 @@ use Illuminate\View\View;
 
 class SupplierController extends Controller
 {
+    private const PENDING_CONFLICTS_SESSION_KEY = 'pending_conflicts';
+
     public function __construct(
         private readonly SupplierRepositoryInterface $supplierRepository,
         private readonly SupplierImportExportService $importExportService,
@@ -26,6 +28,8 @@ class SupplierController extends Controller
 
     public function index(Request $request): View
     {
+        $this->authorize('viewAny', Supplier::class);
+
         $search = trim((string) $request->query('q', ''));
 
         return view('suppliers.index', [
@@ -36,11 +40,15 @@ class SupplierController extends Controller
 
     public function create(): View
     {
+        $this->authorize('create', Supplier::class);
+
         return view('suppliers.create');
     }
 
     public function store(StoreSupplierRequest $request): RedirectResponse
     {
+        $this->authorize('create', Supplier::class);
+
         $supplier = $this->supplierRepository->create($request->validated());
 
         return redirect()
@@ -50,6 +58,8 @@ class SupplierController extends Controller
 
     public function show(Supplier $supplier): View
     {
+        $this->authorize('view', $supplier);
+
         $supplier = $this->supplierRepository->findWithRelationsOrFail($supplier->id);
 
         return view('suppliers.show', [
@@ -60,11 +70,15 @@ class SupplierController extends Controller
 
     public function edit(Supplier $supplier): View
     {
+        $this->authorize('update', $supplier);
+
         return view('suppliers.edit', compact('supplier'));
     }
 
     public function update(UpdateSupplierRequest $request, Supplier $supplier): RedirectResponse
     {
+        $this->authorize('update', $supplier);
+
         $this->supplierRepository->update($supplier, $request->validated());
 
         return redirect()
@@ -74,6 +88,8 @@ class SupplierController extends Controller
 
     public function destroy(Supplier $supplier): RedirectResponse
     {
+        $this->authorize('delete', $supplier);
+
         $this->supplierRepository->delete($supplier);
 
         return redirect()
@@ -83,6 +99,8 @@ class SupplierController extends Controller
 
     public function export(Supplier $supplier): Response
     {
+        $this->authorize('export', $supplier);
+
         $payload = $this->importExportService->exportBySupplier($supplier);
         $fileName = 'supplier-'.$supplier->id.'-export.json';
 
@@ -98,6 +116,8 @@ class SupplierController extends Controller
 
     public function import(ImportSupplierRequest $request, Supplier $supplier): RedirectResponse
     {
+        $this->authorize('import', $supplier);
+
         $payload = $request->payloadAsArray();
 
         Validator::make($payload, [
@@ -131,8 +151,14 @@ class SupplierController extends Controller
                     ],
                     'conflicts' => $exception->conflicts,
                 ])
-                ->with('pending_conflicts', $exception->conflicts);
+                ->with(self::PENDING_CONFLICTS_SESSION_KEY, [
+                    'supplier_id' => $supplier->id,
+                    'created_at' => now()->toIso8601String(),
+                    'conflicts' => $exception->conflicts,
+                ]);
         }
+
+        $request->session()->forget(self::PENDING_CONFLICTS_SESSION_KEY);
 
         return redirect()
             ->route('suppliers.show', $supplier)
@@ -142,11 +168,12 @@ class SupplierController extends Controller
 
     public function exportIndex(Request $request): StreamedResponse
     {
+        $this->authorize('exportAny', Supplier::class);
+
         $search = trim((string) $request->query('q', ''));
-        $suppliers = $this->supplierRepository->paginateWithLayupCount($search, 1000)->items();
         $fileName = 'suppliers-'.now()->format('Ymd-His').'.csv';
 
-        return response()->streamDownload(function () use ($suppliers): void {
+        return response()->streamDownload(function () use ($search): void {
             $handle = fopen('php://output', 'wb');
             if ($handle === false) {
                 return;
@@ -154,16 +181,29 @@ class SupplierController extends Controller
 
             fputcsv($handle, ['id', 'name', 'code', 'address', 'layups_count', 'created_at']);
 
-            foreach ($suppliers as $supplier) {
-                fputcsv($handle, [
-                    $supplier->id,
-                    $supplier->name,
-                    $supplier->code,
-                    $supplier->address,
-                    $supplier->layups_count,
-                    optional($supplier->created_at)->toDateTimeString(),
-                ]);
-            }
+            Supplier::query()
+                ->withCount('layups')
+                ->when($search !== '', function ($query) use ($search): void {
+                    $query->where(function ($subQuery) use ($search): void {
+                        $subQuery
+                            ->where('name', 'like', '%'.$search.'%')
+                            ->orWhere('code', 'like', '%'.$search.'%')
+                            ->orWhere('address', 'like', '%'.$search.'%');
+                    });
+                })
+                ->orderBy('id')
+                ->chunkById(500, function ($suppliers) use ($handle): void {
+                    foreach ($suppliers as $supplier) {
+                        fputcsv($handle, [
+                            $supplier->id,
+                            $supplier->name,
+                            $supplier->code,
+                            $supplier->address,
+                            $supplier->layups_count,
+                            optional($supplier->created_at)->toDateTimeString(),
+                        ]);
+                    }
+                });
 
             fclose($handle);
         }, $fileName, [
@@ -173,9 +213,13 @@ class SupplierController extends Controller
 
     public function conflicts(Supplier $supplier): View|RedirectResponse
     {
-        $pendingConflicts = (array) session('pending_conflicts', []);
+        $this->authorize('resolveConflicts', $supplier);
 
-        if (count($pendingConflicts) === 0) {
+        $pendingEnvelope = (array) session(self::PENDING_CONFLICTS_SESSION_KEY, []);
+        $pendingSupplierId = (int) ($pendingEnvelope['supplier_id'] ?? 0);
+        $pendingConflicts = (array) ($pendingEnvelope['conflicts'] ?? []);
+
+        if ($pendingSupplierId !== $supplier->id || count($pendingConflicts) === 0) {
             return redirect()
                 ->route('suppliers.show', $supplier)
                 ->withErrors(['conflicts' => 'No pending conflicts found. Run import with reject strategy first.']);
@@ -189,9 +233,13 @@ class SupplierController extends Controller
 
     public function applyConflicts(Request $request, Supplier $supplier): RedirectResponse
     {
-        $pendingConflicts = (array) session('pending_conflicts', []);
+        $this->authorize('resolveConflicts', $supplier);
 
-        if (count($pendingConflicts) === 0) {
+        $pendingEnvelope = (array) session(self::PENDING_CONFLICTS_SESSION_KEY, []);
+        $pendingSupplierId = (int) ($pendingEnvelope['supplier_id'] ?? 0);
+        $pendingConflicts = (array) ($pendingEnvelope['conflicts'] ?? []);
+
+        if ($pendingSupplierId !== $supplier->id || count($pendingConflicts) === 0) {
             return redirect()
                 ->route('suppliers.show', $supplier)
                 ->withErrors(['conflicts' => 'No pending conflicts to resolve.']);
@@ -208,7 +256,7 @@ class SupplierController extends Controller
             resolutions: (array) $validated['resolutions'],
         );
 
-        $request->session()->forget('pending_conflicts');
+        $request->session()->forget(self::PENDING_CONFLICTS_SESSION_KEY);
 
         return redirect()
             ->route('suppliers.show', $supplier)

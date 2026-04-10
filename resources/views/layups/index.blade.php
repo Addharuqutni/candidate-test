@@ -5,14 +5,16 @@
                 <h2 class="page-title">Layups</h2>
                 <p class="page-subtitle mt-1">Supplier: {{ $supplier->name }}</p>
             </div>
-            <a href="{{ route('suppliers.layups.create', $supplier) }}" class="btn-primary">New Layup</a>
+            <div class="flex items-center gap-2">
+                <a href="{{ route('suppliers.show', $supplier) }}" class="btn-secondary">Back</a>
+                <a href="{{ route('suppliers.layups.create', $supplier) }}" class="btn-primary">New Layup</a>
+            </div>
         </div>
     </x-slot>
 
     <div class="pb-10">
         <div class="page-wrap">
             <div class="app-card fade-rise">
-                <div class="mb-4"><a class="app-link" href="{{ route('suppliers.show', $supplier) }}">Back to Supplier</a></div>
                 <div class="table-shell">
                 <table class="data-table">
                     <thead>

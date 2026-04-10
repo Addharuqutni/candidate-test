@@ -82,4 +82,61 @@ class SupplierImportExportTest extends TestCase
             'angle' => 15,
         ]);
     }
+
+    public function test_import_reject_stores_conflicts_for_matching_supplier_only(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $supplierA = Supplier::factory()->create();
+        $supplierB = Supplier::factory()->create();
+
+        $layupA = Layup::factory()->create(['supplier_id' => $supplierA->id, 'name' => 'Base Layup']);
+        Layer::factory()->create([
+            'layup_id' => $layupA->id,
+            'layer_order' => 1,
+            'thickness' => 10,
+            'width' => 100,
+            'angle' => 0,
+        ]);
+
+        $payload = [
+            'layups' => [
+                [
+                    'name' => 'Base Layup',
+                    'layers' => [
+                        [
+                            'layer_order' => 1,
+                            'thickness' => 14,
+                            'width' => 110,
+                            'angle' => 15,
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $importResponse = $this->post(route('suppliers.import', $supplierA), [
+            'strategy' => SupplierImportExportService::STRATEGY_REJECT,
+            'payload' => json_encode($payload),
+        ]);
+
+        $importResponse->assertRedirect(route('suppliers.conflicts', $supplierA));
+
+        $wrongSupplierResponse = $this->get(route('suppliers.conflicts', $supplierB));
+        $wrongSupplierResponse->assertRedirect(route('suppliers.show', $supplierB));
+    }
+
+    public function test_import_invalid_json_returns_validation_error(): void
+    {
+        $this->actingAs(User::factory()->create());
+        $supplier = Supplier::factory()->create();
+
+        $response = $this->from(route('suppliers.show', $supplier))->post(route('suppliers.import', $supplier), [
+            'strategy' => SupplierImportExportService::STRATEGY_OVERWRITE,
+            'payload' => '{invalid-json}',
+        ]);
+
+        $response->assertRedirect(route('suppliers.show', $supplier));
+        $response->assertSessionHasErrors(['payload']);
+    }
 }

@@ -5,7 +5,10 @@
                 <h2 class="page-title">Suppliers</h2>
                 <p class="page-subtitle mt-1">Manage timber suppliers and material sourcing.</p>
             </div>
-            <a href="{{ route('suppliers.create') }}" class="btn-primary">+ Add Supplier</a>
+            <div class="flex items-center gap-2">
+                <a href="{{ route('dashboard') }}" class="btn-secondary">Back</a>
+                <a href="{{ route('suppliers.create') }}" class="btn-primary">+ Add Supplier</a>
+            </div>
         </div>
     </x-slot>
 

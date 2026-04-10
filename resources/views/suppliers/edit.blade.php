@@ -1,8 +1,11 @@
 <x-app-layout>
     <x-slot name="header">
-        <div>
-            <h2 class="page-title">Edit Supplier</h2>
-            <p class="page-subtitle mt-1">Update supplier identity and metadata.</p>
+        <div class="flex items-end justify-between gap-3">
+            <div>
+                <h2 class="page-title">Edit Supplier</h2>
+                <p class="page-subtitle mt-1">Update supplier identity and metadata.</p>
+            </div>
+            <a href="{{ route('suppliers.show', $supplier) }}" class="btn-secondary">Back</a>
         </div>
     </x-slot>
 

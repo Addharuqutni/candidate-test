@@ -9,6 +9,7 @@ use App\Models\Supplier;
 use App\Repositories\Contracts\LayupRepositoryInterface;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class LayupController extends Controller
@@ -19,6 +20,8 @@ class LayupController extends Controller
 
     public function index(Supplier $supplier): View
     {
+        $this->authorize('viewAny', Layup::class);
+
         return view('layups.index', [
             'supplier' => $supplier,
             'layups' => $this->layupRepository->getBySupplier($supplier),
@@ -27,11 +30,15 @@ class LayupController extends Controller
 
     public function create(Supplier $supplier): View
     {
+        $this->authorize('create', Layup::class);
+
         return view('layups.create', compact('supplier'));
     }
 
     public function store(StoreLayupRequest $request, Supplier $supplier): RedirectResponse
     {
+        $this->authorize('create', Layup::class);
+
         $layup = $this->layupRepository->createForSupplier($supplier, $request->validated());
 
         return redirect()
@@ -41,6 +48,8 @@ class LayupController extends Controller
 
     public function show(Supplier $supplier, Layup $layup): View
     {
+        $this->authorize('view', $layup);
+
         $layup = $this->layupRepository->findForSupplierOrFail($supplier, $layup->id);
 
         return view('layups.show', compact('supplier', 'layup'));
@@ -48,11 +57,15 @@ class LayupController extends Controller
 
     public function edit(Supplier $supplier, Layup $layup): View
     {
+        $this->authorize('update', $layup);
+
         return view('layups.edit', compact('supplier', 'layup'));
     }
 
     public function update(UpdateLayupRequest $request, Supplier $supplier, Layup $layup): RedirectResponse
     {
+        $this->authorize('update', $layup);
+
         $this->layupRepository->update($layup, $request->validated());
 
         return redirect()
@@ -62,6 +75,8 @@ class LayupController extends Controller
 
     public function destroy(Supplier $supplier, Layup $layup): RedirectResponse
     {
+        $this->authorize('delete', $layup);
+
         $this->layupRepository->delete($layup);
 
         return redirect()
@@ -71,28 +86,34 @@ class LayupController extends Controller
 
     public function duplicate(Supplier $supplier, Layup $layup): RedirectResponse
     {
-        $baseName = $layup->name.' (Copy)';
-        $candidateName = $baseName;
-        $counter = 2;
+        $this->authorize('duplicate', $layup);
 
-        while ($this->layupRepository->findByNameInSupplier($supplier, $candidateName) !== null) {
-            $candidateName = $baseName.' '.$counter;
-            $counter++;
-        }
+        $duplicatedLayup = DB::transaction(function () use ($supplier, $layup): Layup {
+            $baseName = $layup->name.' (Copy)';
+            $candidateName = $baseName;
+            $counter = 2;
 
-        $duplicatedLayup = $this->layupRepository->createForSupplier($supplier, [
-            'name' => $candidateName,
-            'description' => $layup->description,
-        ]);
+            while ($this->layupRepository->findByNameInSupplier($supplier, $candidateName) !== null) {
+                $candidateName = $baseName.' '.$counter;
+                $counter++;
+            }
 
-        foreach ($layup->layers()->orderBy('layer_order')->get() as $layer) {
-            $duplicatedLayup->layers()->create([
-                'layer_order' => $layer->layer_order,
-                'thickness' => $layer->thickness,
-                'width' => $layer->width,
-                'angle' => $layer->angle,
+            $duplicatedLayup = $this->layupRepository->createForSupplier($supplier, [
+                'name' => $candidateName,
+                'description' => $layup->description,
             ]);
-        }
+
+            foreach ($layup->layers()->orderBy('layer_order')->get() as $layer) {
+                $duplicatedLayup->layers()->create([
+                    'layer_order' => $layer->layer_order,
+                    'thickness' => $layer->thickness,
+                    'width' => $layer->width,
+                    'angle' => $layer->angle,
+                ]);
+            }
+
+            return $duplicatedLayup;
+        });
 
         return redirect()
             ->route('suppliers.layups.show', [$supplier, $duplicatedLayup])
@@ -101,6 +122,8 @@ class LayupController extends Controller
 
     public function catalog(Request $request): View
     {
+        $this->authorize('viewAny', Layup::class);
+
         $search = trim((string) $request->query('q', ''));
 
         $layups = Layup::query()

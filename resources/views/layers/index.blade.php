@@ -1,15 +1,17 @@
 <x-app-layout>
     <x-slot name="header">
-        <div>
-            <h2 class="page-title">Layers</h2>
-            <p class="page-subtitle mt-1">Layup: {{ $layup->name }}</p>
+        <div class="flex items-end justify-between gap-3">
+            <div>
+                <h2 class="page-title">Layers</h2>
+                <p class="page-subtitle mt-1">Layup: {{ $layup->name }}</p>
+            </div>
+            <a href="{{ route('suppliers.layups.show', [$supplier, $layup]) }}" class="btn-secondary">Back</a>
         </div>
     </x-slot>
 
     <div class="pb-10">
         <div class="page-wrap">
             <div class="app-card fade-rise">
-                <div class="mb-4"><a class="app-link" href="{{ route('suppliers.layups.show', [$supplier, $layup]) }}">Back to Layup</a></div>
                 <div class="table-shell">
                 <table class="data-table">
                     <thead>
