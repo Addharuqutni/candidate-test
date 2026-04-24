@@ -25,6 +25,10 @@ class SupplierImportExportService
     }
 
     /**
+     * Export data supplier lengkap dengan semua layups dan layers.
+     * Menggunakan eager loading untuk optimasi query.
+     * Return format array dengan struktur hierarki.
+     * 
      * @return array<string, mixed>
      */
     public function exportBySupplier(Supplier $supplier): array
@@ -53,6 +57,22 @@ class SupplierImportExportService
     }
 
     /**
+     * Import data layups dan layers ke supplier dengan strategi conflict resolution.
+     * 
+     * Strategi yang didukung:
+     * - STRATEGY_OVERWRITE: Data incoming menimpa data existing
+     * - STRATEGY_SKIP: Lewati konflik, pertahankan data existing
+     * - STRATEGY_DUPLICATE_LAYUP: Buat layup baru dengan suffix "(imported)"
+     * - STRATEGY_REJECT: Tolak seluruh import jika ada konflik
+     * 
+     * Alur kerja:
+     * 1. Loop setiap layup dari payload
+     * 2. Cek apakah layup dengan nama sama sudah ada
+     * 3. Jika tidak ada, buat layup baru + semua layers
+     * 4. Jika ada, proses setiap layer untuk deteksi konflik
+     * 5. Deteksi konflik: Bandingkan thickness, width, angle
+     * 6. Terapkan strategy sesuai pilihan
+     * 
      * @param array<string, mixed> $payload
      * @return array<string, mixed>
      */
@@ -138,6 +158,10 @@ class SupplierImportExportService
     }
 
     /**
+     * Menerapkan resolusi manual untuk konflik yang pending.
+     * User memilih 'keep_existing' atau 'accept_incoming' untuk setiap konflik.
+     * Menggunakan database transaction untuk memastikan atomicity.
+     * 
      * @param array<int, array<string, mixed>> $conflicts
      * @param array<int|string, array<string, mixed>> $resolutions
      * @return array<string, mixed>
@@ -197,6 +221,8 @@ class SupplierImportExportService
     }
 
     /**
+     * Helper method untuk membuat layer baru dalam layup.
+     * 
      * @param array<string, mixed> $incomingLayer
      */
     private function createLayer(Layup $layup, array $incomingLayer): void
@@ -210,6 +236,16 @@ class SupplierImportExportService
     }
 
     /**
+     * Helper method untuk memproses import satu layer.
+     * Mendeteksi konflik dan menerapkan strategy.
+     * 
+     * Alur kerja:
+     * 1. Cek apakah layer dengan layer_order sama sudah ada
+     * 2. Jika tidak ada, buat layer baru
+     * 3. Jika ada, bandingkan field (thickness, width, angle)
+     * 4. Jika ada perbedaan, catat sebagai konflik
+     * 5. Terapkan strategy sesuai pilihan
+     * 
      * @param array<string, mixed> $incomingLayer
      * @param array<string, mixed> $stats
      */
@@ -269,6 +305,10 @@ class SupplierImportExportService
         }
     }
 
+    /**
+     * Validasi strategy yang dipilih.
+     * Throw 422 error jika strategy tidak valid.
+     */
     private function guardStrategy(string $strategy): void
     {
         if (! in_array($strategy, [
@@ -281,6 +321,11 @@ class SupplierImportExportService
         }
     }
 
+    /**
+     * Generate nama unik untuk layup yang diduplikasi.
+     * Tambahkan suffix "(imported)".
+     * Jika sudah ada, tambahkan counter "(imported) 2", "(imported) 3", dst.
+     */
     private function generateDuplicatedLayupName(Supplier $supplier, string $baseName): string
     {
         $candidate = $baseName.' (imported)';

@@ -153,3 +153,168 @@ Ensure the demo clearly showcases:
 - CRUD functionality
 - Import / Export feature
 - Conflict resolution behavior
+
+---
+
+## 8. Setup dan Running Program
+
+### Prasyarat
+
+Pastikan sistem Anda sudah terinstal:
+- PHP >= 8.2
+- Composer
+- PostgreSQL >= 12
+- Node.js & NPM
+- Git
+
+### Langkah 1: Clone Repository
+
+```bash
+git clone <repository-url>
+cd candidate-test
+```
+
+### Langkah 2: Install Dependencies
+
+```bash
+# Install PHP dependencies
+composer install
+
+# Install Node.js dependencies
+npm install
+```
+
+### Langkah 3: Setup Database PostgreSQL
+
+1. Buka PostgreSQL (pgAdmin atau terminal)
+2. Buat database baru:
+
+```sql
+CREATE DATABASE cante;
+```
+
+Atau via terminal:
+
+```bash
+psql -U postgres
+CREATE DATABASE cante;
+\q
+```
+
+### Langkah 4: Konfigurasi Environment
+
+1. Copy file `.env.example` ke `.env`:
+
+```bash
+cp .env.example .env
+```
+
+2. Edit file `.env` dan sesuaikan konfigurasi database:
+
+```env
+DB_CONNECTION=pgsql
+DB_HOST=localhost
+DB_PORT=5432
+DB_DATABASE=cante
+DB_USERNAME=postgres
+DB_PASSWORD=your_password_here
+```
+
+3. Generate application key:
+
+```bash
+php artisan key:generate
+```
+
+### Langkah 5: Migrasi Database
+
+Jalankan migrasi untuk membuat tabel-tabel:
+
+```bash
+php artisan migrate
+```
+
+### Langkah 6: (Opsional) Seed Data
+
+Jika ada seeder, jalankan:
+
+```bash
+php artisan db:seed
+```
+
+### Langkah 7: Build Assets
+
+Compile frontend assets:
+
+```bash
+npm run build
+```
+
+Atau untuk development dengan hot reload:
+
+```bash
+npm run dev
+```
+
+### Langkah 8: Jalankan Aplikasi
+
+Jalankan development server:
+
+```bash
+php artisan serve
+```
+
+Aplikasi akan berjalan di `http://localhost:8000`
+
+### Langkah 9: (Opsional) Jalankan Queue Worker
+
+Jika aplikasi menggunakan queue:
+
+```bash
+php artisan queue:work
+```
+
+### Troubleshooting
+
+**Error: PDO driver not found**
+- Install PHP PostgreSQL extension:
+  - Windows: Aktifkan `extension=pdo_pgsql` dan `extension=pgsql` di `php.ini`
+  - Linux: `sudo apt-get install php-pgsql`
+  - Mac: `brew install php-pgsql`
+
+**Error: Connection refused**
+- Pastikan PostgreSQL service berjalan
+- Cek port 5432 tidak digunakan aplikasi lain
+- Verifikasi username dan password di `.env`
+
+**Error: Permission denied**
+- Pastikan user PostgreSQL memiliki hak akses ke database
+- Grant privileges: `GRANT ALL PRIVILEGES ON DATABASE cante TO postgres;`
+
+### Menjalankan Development dengan Concurrently
+
+Untuk menjalankan server, queue, logs, dan vite secara bersamaan:
+
+```bash
+composer dev
+```
+
+Command ini akan menjalankan:
+- PHP development server
+- Queue listener
+- Laravel Pail (logs)
+- Vite dev server
+
+### Testing
+
+Jalankan test suite:
+
+```bash
+php artisan test
+```
+
+Atau dengan PHPUnit:
+
+```bash
+./vendor/bin/phpunit
+```

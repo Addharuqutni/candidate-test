@@ -26,6 +26,10 @@ class SupplierController extends Controller
     ) {
     }
 
+    /**
+     * Menampilkan daftar supplier dengan pagination dan fitur search.
+     * Query parameter 'q' digunakan untuk pencarian.
+     */
     public function index(Request $request): View
     {
         $this->authorize('viewAny', Supplier::class);
@@ -38,6 +42,9 @@ class SupplierController extends Controller
         ]);
     }
 
+    /**
+     * Menampilkan form untuk membuat supplier baru.
+     */
     public function create(): View
     {
         $this->authorize('create', Supplier::class);
@@ -45,6 +52,10 @@ class SupplierController extends Controller
         return view('suppliers.create');
     }
 
+    /**
+     * Menyimpan supplier baru ke database.
+     * Validasi dilakukan via StoreSupplierRequest.
+     */
     public function store(StoreSupplierRequest $request): RedirectResponse
     {
         $this->authorize('create', Supplier::class);
@@ -56,6 +67,10 @@ class SupplierController extends Controller
             ->with('status', 'Supplier created successfully.');
     }
 
+    /**
+     * Menampilkan detail supplier beserta semua layups dan layers.
+     * Juga menampilkan import report jika ada di session.
+     */
     public function show(Supplier $supplier): View
     {
         $this->authorize('view', $supplier);
@@ -68,6 +83,9 @@ class SupplierController extends Controller
         ]);
     }
 
+    /**
+     * Menampilkan form untuk edit supplier.
+     */
     public function edit(Supplier $supplier): View
     {
         $this->authorize('update', $supplier);
@@ -75,6 +93,10 @@ class SupplierController extends Controller
         return view('suppliers.edit', compact('supplier'));
     }
 
+    /**
+     * Update data supplier.
+     * Validasi dilakukan via UpdateSupplierRequest.
+     */
     public function update(UpdateSupplierRequest $request, Supplier $supplier): RedirectResponse
     {
         $this->authorize('update', $supplier);
@@ -86,6 +108,10 @@ class SupplierController extends Controller
             ->with('status', 'Supplier updated successfully.');
     }
 
+    /**
+     * Menghapus supplier dari database.
+     * Cascade delete akan menghapus semua layups dan layers terkait.
+     */
     public function destroy(Supplier $supplier): RedirectResponse
     {
         $this->authorize('delete', $supplier);
@@ -97,6 +123,10 @@ class SupplierController extends Controller
             ->with('status', 'Supplier deleted successfully.');
     }
 
+    /**
+     * Export data supplier beserta semua layups dan layers dalam format JSON.
+     * File di-download dengan nama supplier-{id}-export.json.
+     */
     public function export(Supplier $supplier): Response
     {
         $this->authorize('export', $supplier);
@@ -114,6 +144,11 @@ class SupplierController extends Controller
         );
     }
 
+    /**
+     * Import data layups dan layers ke supplier.
+     * Mendukung 4 strategi conflict resolution: overwrite, skip, duplicate_layup, reject.
+     * Jika strategy = reject dan ada konflik, redirect ke halaman conflict resolution.
+     */
     public function import(ImportSupplierRequest $request, Supplier $supplier): RedirectResponse
     {
         $this->authorize('import', $supplier);
@@ -166,6 +201,11 @@ class SupplierController extends Controller
             ->with('import_report', $report);
     }
 
+    /**
+     * Export daftar semua supplier ke CSV.
+     * Menggunakan streaming untuk efisiensi memory pada data besar.
+     * Data di-chunk per 500 records untuk optimasi.
+     */
     public function exportIndex(Request $request): StreamedResponse
     {
         $this->authorize('exportAny', Supplier::class);
@@ -211,6 +251,11 @@ class SupplierController extends Controller
         ]);
     }
 
+    /**
+     * Menampilkan halaman conflict resolution UI.
+     * Menampilkan konflik yang pending dari session.
+     * Jika tidak ada konflik, redirect ke show supplier.
+     */
     public function conflicts(Supplier $supplier): View|RedirectResponse
     {
         $this->authorize('resolveConflicts', $supplier);
@@ -231,6 +276,11 @@ class SupplierController extends Controller
         ]);
     }
 
+    /**
+     * Menerapkan resolusi konflik yang dipilih user.
+     * User bisa pilih 'keep_existing' atau 'accept_incoming' untuk setiap konflik.
+     * Setelah selesai, pending conflicts dihapus dari session.
+     */
     public function applyConflicts(Request $request, Supplier $supplier): RedirectResponse
     {
         $this->authorize('resolveConflicts', $supplier);

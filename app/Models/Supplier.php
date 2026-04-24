@@ -20,6 +20,9 @@ class Supplier extends Model
     ];
 
     /**
+     * Relasi one-to-many ke Layup.
+     * Satu supplier bisa memiliki banyak layup.
+     * 
      * @return HasMany<Layup, $this>
      */
     public function layups(): HasMany

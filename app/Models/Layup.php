@@ -21,6 +21,9 @@ class Layup extends Model
     ];
 
     /**
+     * Relasi many-to-one ke Supplier.
+     * Setiap layup dimiliki oleh satu supplier.
+     * 
      * @return BelongsTo<Supplier, $this>
      */
     public function supplier(): BelongsTo
@@ -29,6 +32,9 @@ class Layup extends Model
     }
 
     /**
+     * Relasi one-to-many ke Layer.
+     * Satu layup bisa memiliki banyak layer.
+     * 
      * @return HasMany<Layer, $this>
      */
     public function layers(): HasMany

@@ -22,6 +22,9 @@ class Layer extends Model
     ];
 
     /**
+     * Relasi many-to-one ke Layup.
+     * Setiap layer dimiliki oleh satu layup.
+     * 
      * @return BelongsTo<Layup, $this>
      */
     public function layup(): BelongsTo

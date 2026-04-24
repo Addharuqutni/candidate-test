@@ -18,6 +18,9 @@ class LayupController extends Controller
     {
     }
 
+    /**
+     * Menampilkan daftar layup dalam satu supplier.
+     */
     public function index(Supplier $supplier): View
     {
         $this->authorize('viewAny', Layup::class);
@@ -28,6 +31,9 @@ class LayupController extends Controller
         ]);
     }
 
+    /**
+     * Menampilkan form untuk membuat layup baru dalam supplier.
+     */
     public function create(Supplier $supplier): View
     {
         $this->authorize('create', Layup::class);
@@ -35,6 +41,10 @@ class LayupController extends Controller
         return view('layups.create', compact('supplier'));
     }
 
+    /**
+     * Menyimpan layup baru ke supplier.
+     * Validasi dilakukan via StoreLayupRequest.
+     */
     public function store(StoreLayupRequest $request, Supplier $supplier): RedirectResponse
     {
         $this->authorize('create', Layup::class);
@@ -46,6 +56,9 @@ class LayupController extends Controller
             ->with('status', 'Layup created successfully.');
     }
 
+    /**
+     * Menampilkan detail layup beserta semua layers.
+     */
     public function show(Supplier $supplier, Layup $layup): View
     {
         $this->authorize('view', $layup);
@@ -55,6 +68,9 @@ class LayupController extends Controller
         return view('layups.show', compact('supplier', 'layup'));
     }
 
+    /**
+     * Menampilkan form untuk edit layup.
+     */
     public function edit(Supplier $supplier, Layup $layup): View
     {
         $this->authorize('update', $layup);
@@ -62,6 +78,10 @@ class LayupController extends Controller
         return view('layups.edit', compact('supplier', 'layup'));
     }
 
+    /**
+     * Update data layup.
+     * Validasi dilakukan via UpdateLayupRequest.
+     */
     public function update(UpdateLayupRequest $request, Supplier $supplier, Layup $layup): RedirectResponse
     {
         $this->authorize('update', $layup);
@@ -73,6 +93,10 @@ class LayupController extends Controller
             ->with('status', 'Layup updated successfully.');
     }
 
+    /**
+     * Menghapus layup dari database.
+     * Cascade delete akan menghapus semua layers terkait.
+     */
     public function destroy(Supplier $supplier, Layup $layup): RedirectResponse
     {
         $this->authorize('delete', $layup);
@@ -84,6 +108,12 @@ class LayupController extends Controller
             ->with('status', 'Layup deleted successfully.');
     }
 
+    /**
+     * Menduplikasi layup beserta semua layers.
+     * Nama layup baru diberi suffix "(Copy)".
+     * Jika sudah ada, tambahkan counter "(Copy) 2", "(Copy) 3", dst.
+     * Menggunakan database transaction untuk memastikan atomicity.
+     */
     public function duplicate(Supplier $supplier, Layup $layup): RedirectResponse
     {
         $this->authorize('duplicate', $layup);
@@ -120,6 +150,10 @@ class LayupController extends Controller
             ->with('status', 'Layup duplicated successfully.');
     }
 
+    /**
+     * Menampilkan katalog semua layup dari semua supplier dengan pagination.
+     * Fitur search berdasarkan nama layup, description, atau nama supplier.
+     */
     public function catalog(Request $request): View
     {
         $this->authorize('viewAny', Layup::class);

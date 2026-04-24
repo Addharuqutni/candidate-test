@@ -18,6 +18,10 @@ class LayerController extends Controller
     {
     }
 
+    /**
+     * Menampilkan daftar layer dalam satu layup.
+     * Layers diurutkan berdasarkan layer_order.
+     */
     public function index(Supplier $supplier, Layup $layup): View
     {
         $this->authorize('viewAny', Layer::class);
@@ -29,6 +33,9 @@ class LayerController extends Controller
         ]);
     }
 
+    /**
+     * Menampilkan form untuk membuat layer baru dalam layup.
+     */
     public function create(Supplier $supplier, Layup $layup): View
     {
         $this->authorize('create', Layer::class);
@@ -36,6 +43,10 @@ class LayerController extends Controller
         return view('layers.create', compact('supplier', 'layup'));
     }
 
+    /**
+     * Menyimpan layer baru ke layup.
+     * Validasi dilakukan via StoreLayerRequest.
+     */
     public function store(StoreLayerRequest $request, Supplier $supplier, Layup $layup): RedirectResponse
     {
         $this->authorize('create', Layer::class);
@@ -47,6 +58,9 @@ class LayerController extends Controller
             ->with('status', 'Layer created successfully.');
     }
 
+    /**
+     * Menampilkan detail layer.
+     */
     public function show(Supplier $supplier, Layup $layup, Layer $layer): View
     {
         $this->authorize('view', $layer);
@@ -56,6 +70,9 @@ class LayerController extends Controller
         return view('layers.show', compact('supplier', 'layup', 'layer'));
     }
 
+    /**
+     * Menampilkan form untuk edit layer.
+     */
     public function edit(Supplier $supplier, Layup $layup, Layer $layer): View
     {
         $this->authorize('update', $layer);
@@ -63,6 +80,10 @@ class LayerController extends Controller
         return view('layers.edit', compact('supplier', 'layup', 'layer'));
     }
 
+    /**
+     * Update data layer.
+     * Validasi dilakukan via UpdateLayerRequest.
+     */
     public function update(UpdateLayerRequest $request, Supplier $supplier, Layup $layup, Layer $layer): RedirectResponse
     {
         $this->authorize('update', $layer);
@@ -74,6 +95,9 @@ class LayerController extends Controller
             ->with('status', 'Layer updated successfully.');
     }
 
+    /**
+     * Menghapus layer dari database.
+     */
     public function destroy(Supplier $supplier, Layup $layup, Layer $layer): RedirectResponse
     {
         $this->authorize('delete', $layer);
@@ -85,6 +109,10 @@ class LayerController extends Controller
             ->with('status', 'Layer deleted successfully.');
     }
 
+    /**
+     * Menampilkan katalog semua layer dari semua layup dan supplier dengan pagination.
+     * Fitur search berdasarkan nama layup atau supplier.
+     */
     public function catalog(Request $request): View
     {
         $this->authorize('viewAny', Layer::class);
